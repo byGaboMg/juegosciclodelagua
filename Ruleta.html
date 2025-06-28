@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ruleta con Preguntas Numeradas y Colores</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f1f8ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .game-container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      max-width: 600px;
+      width: 90%;
+    }
+    canvas {
+      margin: 0 auto;
+      display: block;
+    }
+    .popup, .popup-eliminado {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background-color: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    .popup-inner, .popup-eliminado-inner {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 400px;
+    }
+    .popup-eliminado-inner {
+      background-color: rgba(0,0,0,0.9);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>🎡 Ruleta de Preguntas Numeradas</h1>
+    <canvas id="canvas" width="500" height="500"></canvas>
+    <button id="spin" class="btn btn-success mt-3">Girar Ruleta</button>
+    <div class="mt-3">Puntaje actual: <strong id="score">0</strong></div>
+  </div>
+
+  <div id="popup" class="popup">
+    <div class="popup-inner">
+      <p id="popupQuestion"></p>
+      <p class="fw-bold">¿El equipo respondió bien?</p>
+      <button class="btn btn-success m-2" onclick="answer(true)">Sí</button>
+      <button class="btn btn-danger m-2" onclick="answer(false)">No</button>
+    </div>
+  </div>
+
+  <div id="popupEliminado" class="popup-eliminado">
+    <div class="popup-eliminado-inner">
+      <p>🚫 <strong>Equipo eliminado</strong></p>
+      <p>Puntaje: <span id="finalScore"></span></p>
+      <button class="btn btn-light mt-4" onclick="restartGame()">Volver a jugar</button>
+    </div>
+  </div>
+
+<script>
+  const questions = [
+    "¿Qué es la evaporación?",
+    "¿Qué ocurre durante la condensación?",
+    "¿Cómo se llama el proceso en el que el vapor se convierte en líquido?",
+    "¿Qué provoca la precipitación?",
+    "¿Qué es la infiltración del agua?",
+    "¿Qué función tiene el sol en el ciclo del agua?",
+    "¿Dónde se forman las nubes?",
+    "¿Qué papel juegan los ríos en el ciclo del agua?",
+    "¿Qué ocurre después de que el agua se condensa?",
+    "¿Qué nombre recibe el ciclo completo del agua?",
+    "¿Cómo afecta la humedad al ciclo del agua?",
+    "¿Qué es la hidrosfera?",
+    "¿Qué influencia tiene el clima en el ciclo del agua?",
+    "¿Cómo contribuye el mar al ciclo del agua?",
+    "¿Qué sucede con la nieve en el ciclo del agua?",
+    "¿Qué es el vapor de agua?",
+    "¿Qué son las corrientes de agua?",
+    "¿Qué ocurre en la zona de precipitación más intensa?"
+  ];
+
+  const options = Array.from({length: questions.length}, (_, i) => (i + 1).toString());
+
+  let startAngle = 0;
+  let arc = Math.PI / (options.length / 2);
+  let spinTimeout = null;
+
+  let spinAngleStart = 0;
+  let spinTime = 0;
+  let spinTimeTotal = 0;
+
+  let ctx;
+  let score = 0;
+
+  function getDifficultyColor(index) {
+    // 0-5 verde, 6-11 amarillo, 12-17 rojo
+    if (index < 6) return '#28a745';          // verde Bootstrap
+    else if (index < 12) return '#ffc107';    // amarillo Bootstrap
+    else return '#dc3545';                     // rojo Bootstrap
+  }
+
+  function drawRouletteWheel() {
+    const canvas = document.getElementById("canvas");
+    if (canvas.getContext) {
+      const outsideRadius = 200;
+      const textRadius = 160;
+      const insideRadius = 125;
+
+      ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, 500, 500);
+
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.font = 'bold 30px Helvetica, Arial';
+
+      for (let i = 0; i < options.length; i++) {
+        const angle = startAngle + i * arc;
+        ctx.fillStyle = getDifficultyColor(i);
+
+        ctx.beginPath();
+        ctx.arc(250, 250, outsideRadius, angle, angle + arc, false);
+        ctx.arc(250, 250, insideRadius, angle + arc, angle, true);
+        ctx.stroke();
+        ctx.fill();
+
+        ctx.save();
+        ctx.fillStyle = "black";
+        ctx.translate(250 + Math.cos(angle + arc / 2) * textRadius,
+                      250 + Math.sin(angle + arc / 2) * textRadius);
+        ctx.rotate(angle + arc / 2 + Math.PI / 2);
+
+        const text = options[i];
+        ctx.fillText(text, -ctx.measureText(text).width / 2, 10);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = "black";
+      ctx.beginPath();
+      ctx.moveTo(250 - 4, 250 - (outsideRadius + 5));
+      ctx.lineTo(250 + 4, 250 - (outsideRadius + 5));
+      ctx.lineTo(250 + 0, 250 - (outsideRadius - 13));
+      ctx.fill();
+    }
+  }
+
+  function byte2Hex(n) {
+    const nybHexString = "0123456789ABCDEF";
+    return nybHexString.substr((n >> 4) & 0x0F, 1) + nybHexString.substr(n & 0x0F, 1);
+  }
+
+  function RGB2Color(r, g, b) {
+    return '#' + byte2Hex(r) + byte2Hex(g) + byte2Hex(b);
+  }
+
+  function spin() {
+    spinAngleStart = Math.random() * 10 + 10;
+    spinTime = 0;
+    spinTimeTotal = Math.random() * 3 + 4 * 1000;
+    rotateWheel();
+  }
+
+  function rotateWheel() {
+    spinTime += 30;
+    if (spinTime >= spinTimeTotal) {
+      stopRotateWheel();
+      return;
+    }
+    const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
+    startAngle += (spinAngle * Math.PI / 180);
+    drawRouletteWheel();
+    spinTimeout = setTimeout(rotateWheel, 30);
+  }
+
+  function stopRotateWheel() {
+    clearTimeout(spinTimeout);
+    const degrees = startAngle * 180 / Math.PI + 90;
+    const arcd = arc * 180 / Math.PI;
+    const index = Math.floor((360 - degrees % 360) / arcd);
+    const text = options[index];
+    document.getElementById("popupQuestion").textContent = `Pregunta #${text}: ${questions[parseInt(text) - 1]}`;
+    document.getElementById("popup").style.display = "flex";
+  }
+
+  function easeOut(t, b, c, d) {
+    const ts = (t /= d) * t;
+    const tc = ts * t;
+    return b + c * (tc + -3 * ts + 3 * t);
+  }
+
+  function answer(correct) {
+    document.getElementById("popup").style.display = "none";
+    if (correct) {
+      score++;
+      document.getElementById("score").textContent = score;
+    } else {
+      document.getElementById("finalScore").textContent = score;
+      document.getElementById("popupEliminado").style.display = "flex";
+    }
+  }
+
+  function restartGame() {
+    score = 0;
+    document.getElementById("score").textContent = score;
+    document.getElementById("popupEliminado").style.display = "none";
+  }
+
+  document.getElementById("spin").addEventListener("click", spin);
+  drawRouletteWheel();
+</script>
+</body>
+</html>

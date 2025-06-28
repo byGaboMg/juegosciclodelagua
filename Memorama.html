@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Memorama Ciclo del Agua</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #e0f7fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    #timer {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    #grid {
+      display: flex;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 1200px;
+      justify-content: center;
+      gap: 24px;
+      border: 2px solid #00796b;
+      padding: 20px;
+      border-radius: 12px;
+      background: #b2dfdb;
+      box-sizing: border-box;
+    }
+
+    .tarjeta {
+      background-color: #fff59d;
+      border: 2px solid #004d40;
+      border-radius: 15px;
+      width: 180px;
+      height: 180px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+      user-select: none;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #004d40;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    .tarjeta img {
+      max-width: 140px;
+      max-height: 140px;
+      pointer-events: none;
+    }
+
+    .tarjeta.bien {
+      background-color: #66bb6a;
+      cursor: default;
+      color: white;
+    }
+
+    .tarjeta.revelada {
+      background-color: #a5d6a7;
+    }
+
+    button {
+      margin: 20px 0 40px;
+      padding: 12px 24px;
+      font-size: 1.2rem;
+      background-color: #00796b;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #004d40;
+    }
+
+    .popup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+
+    .popup-inner {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 400px;
+    }
+
+    @media (max-width: 768px) {
+      .tarjeta {
+        width: 120px;
+        height: 120px;
+      }
+      .tarjeta img {
+        max-width: 90px;
+        max-height: 90px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Memorama: Ciclo del Agua ;)</h1>
+<div id="timer">Tiempo: 0 segundos</div>
+<button id="startBtn">Iniciar Memorama</button>
+<div id="grid"></div>
+
+<div id="popupGanaste" class="popup">
+  <div class="popup-inner">
+    <h3>🎉 ¡Felicidades!</h3>
+    <p>Terminaste en <strong><span id="tiempoFinal"></span></strong> segundos.</p>
+    <button class="btn btn-primary mt-3" onclick="cerrarGanaste()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+  const fases = [
+    { type: "img", name: "evaporacion", src: "evaporacion.png" },
+    { type: "img", name: "condensacion", src: "condensacion.png" },
+    { type: "img", name: "precipitacion", src: "precipitacion.jpg" },
+    { type: "img", name: "filtracion", src: "filtracion.png" },
+    { type: "text", name: "Evaporación" },
+    { type: "text", name: "Condensación" },
+    { type: "text", name: "Precipitación" },
+    { type: "text", name: "Filtración" },
+  ];
+
+  let tarjetas = [];
+  let tarjetasSeleccionadas = [];
+  let matchedPairs = 0;
+  let timerInterval = null;
+  let tiempo = 0;
+
+  const grid = document.getElementById("grid");
+  const timerDisplay = document.getElementById("timer");
+  const startBtn = document.getElementById("startBtn");
+
+  function mezclarArray(array) {
+    return array
+      .map(valor => ({ valor, sort: Math.random() }))
+      .sort((a, b) => a.sort - b.sort)
+      .map(({ valor }) => valor);
+  }
+
+  function crearTarjetas() {
+    tarjetas = mezclarArray(fases);
+    grid.innerHTML = "";
+    matchedPairs = 0;
+    tarjetasSeleccionadas = [];
+    tiempo = 0;
+    timerDisplay.textContent = "Tiempo: 0 segundos";
+
+    tarjetas.forEach((tarjetaData, index) => {
+      const tarjeta = document.createElement("div");
+      tarjeta.classList.add("tarjeta");
+      tarjeta.dataset.name = tarjetaData.name;
+      tarjeta.dataset.index = index;
+      tarjeta.textContent = "?";
+
+      tarjeta.addEventListener("click", () => {
+        if (
+          tarjetasSeleccionadas.length < 2 &&
+          !tarjeta.classList.contains("revelada") &&
+          !tarjeta.classList.contains("bien")
+        ) {
+          revelarTarjeta(tarjeta, tarjetaData);
+        }
+      });
+
+      grid.appendChild(tarjeta);
+    });
+  }
+
+  function revelarTarjeta(tarjeta, data) {
+    tarjetasSeleccionadas.push(tarjeta);
+    tarjeta.classList.add("revelada");
+    tarjeta.textContent = "";
+
+    if (data.type === "img") {
+      const img = document.createElement("img");
+      img.src = data.src;
+      img.alt = data.name;
+      tarjeta.appendChild(img);
+    } else {
+      tarjeta.textContent = data.name;
+    }
+
+    if (tarjetasSeleccionadas.length === 2) {
+      setTimeout(verificarMatch, 800);
+    }
+  }
+
+  function quitarAcentos(str) {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function verificarMatch() {
+    const [tarjeta1, tarjeta2] = tarjetasSeleccionadas;
+    let name1 = quitarAcentos(tarjeta1.dataset.name.toLowerCase());
+    let name2 = quitarAcentos(tarjeta2.dataset.name.toLowerCase());
+
+    if (name1 === name2) {
+      tarjeta1.classList.add("bien");
+      tarjeta2.classList.add("bien");
+      matchedPairs++;
+      if (matchedPairs === fases.length / 2) {
+        clearInterval(timerInterval);
+        document.getElementById("tiempoFinal").textContent = tiempo;
+        document.getElementById("popupGanaste").style.display = "flex";
+      }
+    } else {
+      tarjeta1.classList.remove("revelada");
+      tarjeta2.classList.remove("revelada");
+      tarjeta1.textContent = "?";
+      tarjeta2.textContent = "?";
+    }
+
+    tarjetasSeleccionadas = [];
+  }
+
+  function iniciarTimer() {
+    clearInterval(timerInterval);
+    tiempo = 0;
+    timerDisplay.textContent = "Tiempo: 0 segundos";
+    timerInterval = setInterval(() => {
+      tiempo++;
+      timerDisplay.textContent = `Tiempo: ${tiempo} segundos`;
+    }, 1000);
+  }
+
+  function cerrarGanaste() {
+    document.getElementById("popupGanaste").style.display = "none";
+  }
+
+  startBtn.addEventListener("click", () => {
+    crearTarjetas();
+    iniciarTimer();
+  });
+</script>
+
+</body>
+</html>

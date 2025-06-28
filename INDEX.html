@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Juegos del Ciclo del Agua 🌊</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body {
+      background: linear-gradient(to bottom right, #b3e5fc, #e1f5fe);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .menu-container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      width: 90%;
+      max-width: 600px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 30px;
+      color: #0277bd;
+    }
+
+    .game-button {
+      display: block;
+      width: 100%;
+      padding: 20px;
+      margin: 15px 0;
+      font-size: 1.5rem;
+      border: none;
+      border-radius: 15px;
+      transition: 0.3s;
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+    }
+
+    .game-button:hover {
+      transform: scale(1.05);
+    }
+
+    .adivina {
+      background-color: #4caf50;
+    }
+
+    .ruleta {
+      background-color: #fbc02d;
+      color: black;
+    }
+
+    .memorama {
+      background-color: #29b6f6;
+    }
+
+    .emoji {
+      font-size: 2rem;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="menu-container">
+    <h1>🌧️ Juegos del Ciclo del Agua</h1>
+
+    <a href="CicloAgua.html" class="game-button adivina">
+      <span class="emoji">🔤</span> Adivina la Palabra
+    </a>
+
+    <a href="Ruleta.html" class="game-button ruleta">
+      <span class="emoji">🎡</span> Ruleta de Preguntas
+    </a>
+
+    <a href="Memorama.html" class="game-button memorama">
+      <span class="emoji">🧠</span> Memorama del Agua
+    </a>
+  </div>
+
+</body>
+</html>
